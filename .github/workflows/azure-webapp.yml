@@ -1,9 +1,10 @@
-name: Build and deploy ASP.NET Core app to Azure Web App
+name: Build and Deploy .NET app to Azure Web App
 
 on:
   push:
     branches:
-      - master
+      - master  # or use 'main' if that's your default branch
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -11,23 +12,28 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v2
-        with:
-          dotnet-version: '7.0.x'
+      - name: Setup .NET 9
+        run: |
+          wget https://dotnetcli.azureedge.net/dotnet/Sdk/9.0.100-preview.1.24130.2/dotnet-sdk-9.0.100-preview.1.24130.2-linux-x64.tar.gz
+          mkdir -p "$HOME/dotnet"
+          tar zxf dotnet-sdk-9.0.100-preview.1.24130.2-linux-x64.tar.gz -C "$HOME/dotnet"
+          echo "$HOME/dotnet" >> $GITHUB_PATH
 
-      - name: Build
+      - name: Display .NET version
+        run: dotnet --version
+
+      - name: Build with dotnet
         run: dotnet build --configuration Release
 
-      - name: Publish
-        run: dotnet publish -c Release -o ./publish
+      - name: Publish app
+        run: dotnet publish --configuration Release --output ./publish
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: laiken-webapp
+          app-name: YOUR_APP_NAME  # Replace this with your app service name
           slot-name: production
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
           package: ./publish
